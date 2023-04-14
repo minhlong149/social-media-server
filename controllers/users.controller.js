@@ -8,6 +8,7 @@ export default class UsersController {
   static async getUsersById(request, response) {
     // populate friendsList & posts
     // return 200 OK and the response
+    //Oanh
     const { userId } = request.params;
   }
 
