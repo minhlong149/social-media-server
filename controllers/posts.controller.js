@@ -1,20 +1,41 @@
+import postSchema from "../models/post.model.js"
 export default class PostsController {
   static async getPosts(request, response) {
     // return 200 OK and the response, WITH the likes and comments count !!
     const { caption, hashtag, sortBy } = request.query;
+    let post;
     switch (sortBy) {
       // sort for homepage display
       case 'latest':
         // sorted by date post
+        var latest = {timestamps : -1}
+        post = await postSchema.sort(latest);
         break;
 
       case 'popular':
         // sorted by a scoring system
+
         break;
 
       default:
         // don't sort, filter by caption or ONE hashtag for searching
+        const filter ={};
+        if(request.query.caption)
+          filter.caption = request.query.caption;
+          else if(request.query.hashtag)
+                filter.hashtag = request.query.hashtag;
+                
+        post = await postSchema.find(filter).sort({timestamps: -1});
         break;
+
+    }
+          
+    try {
+      const postList = await post.toArray();
+      response.status(200).json(postList);
+    } 
+    catch (err){
+        throw err;
     }
   }
 

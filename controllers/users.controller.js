@@ -5,23 +5,24 @@ export default class UsersController {
     // return 200 OK and the response
     const { firstName, lastName, username, email, phone } = request.query;
     const filter={};
-    if (request.query){
-      if("firstName" in request.query)
+    if (request.query.firstName)
         filter.firstName = request.query.firstName;
-      if("lastName" in request.query)
-        filter.lastName = request.query.lastName;
-      if("username" in request.query)
-        filter.username = request.query.username;
-      if("email" in request.query)
-        filter.email = request.query.email;
-      if("phone" in request.query)
-        filter.phone = request.query.phone;
-    }
+      else if(request.query.lastName)
+              request.query.lastName;
+              else if(request.query.username)
+                      filter.username = request.query.username;
+                      else if(request.query.email)
+                              filter.email = request.query.email;
+                              else if(request.query.phone)
+                                    filter.phone = request.query.phone;
+    let cursor;
     try{
-      const user= await userSchema.find(filter);
-      response.status(200).json(user);
-    } catch (err){
-      response.status(500).send(err.message);
+      cursor= await userSchema.find(filter);
+      const userList = await cursor.toArray();
+      response.status(200).json(userList);
+    } 
+    catch (err){
+        throw err;
     }
   }
 
