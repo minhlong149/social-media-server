@@ -1,5 +1,6 @@
 const User = require ("../models/user.model");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 
 export default class UsersController {
   static async getUsers(request, response) {
@@ -22,12 +23,14 @@ export default class UsersController {
         // return 400 Bad Request if missing values
         return response.status(400).json({ error: 'Missing required values' });
       }
-  
+      
+      const hashed = await bcrypt.hash(request.body.password, 10);
+
       const newUser = new User ({
         username: request.body.username,
         email: request.body.email,
         phone: request.body.phone,
-        password: request.body.password,
+        password: hashed,
         firstName: request.body.firstName,
         lastName: request.body.lastName,
         gender: request.body.gender,
@@ -55,10 +58,16 @@ export default class UsersController {
       if (!user) {
         return response.status(404).json("Wrong username!");
       }
-      if (user.password !== password || user.email !== email) {
+
+      const validPassword = await bcrypt.compare(
+        request.body.password,
+        user.password
+      )
+
+      if (!validPassword || user.email !== email) {
         return response.status(401).json({ error: "Credential invalid!" });
       }
-      if(user && user.password === password && user.email === email) { 
+      if(user && validPassword && user.email === email) { 
         const accessToken = jwt.sign(
           {
             id: user.id,
