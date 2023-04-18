@@ -1,10 +1,10 @@
-import { faker } from '@faker-js/faker';
+import { faker } from '@faker-js/faker/locale/vi';
 
-// Create 100 random users
-const users = Array.from({ length: 100 }, () => getRandomUser());
-console.log(users);
+export default function generateUsers(userCount = 10) {
+  return Array.from({ length: userCount }, () => getRandomUser());
+}
 
-function getRandomUser() {
+export function getRandomUser() {
   const gender = faker.name.sex();
 
   const firstName = faker.name.firstName(gender);
