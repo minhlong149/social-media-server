@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 import User from '../models/user.model.js';
+import config from '../utils/config.js';
 
 export default class UsersController {
   static async getUsers(request, response) {
@@ -71,8 +72,8 @@ export default class UsersController {
             id: user.id,
             admin: user.admin,
           },
-          process.env.JWT_ACCESS_KEY,
-          { expiresIn: '1d' },
+          config.JWT_SECRET,
+          { expiresIn: config.JWT_EXPIRATION_TIME },
         );
         const { password, ...others } = user._doc;
         return response.status(200).json({ ...others, accessToken });
