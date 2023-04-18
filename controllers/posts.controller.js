@@ -3,17 +3,6 @@ import Post from "../models/post.model";
 export default class PostsController {
   static async getPosts(request, response) {
     // return 200 OK and the response, WITH the likes and comments count !!
-    const listOfPosts = await Post.findAll({
-      include: [Like]
-    });
-    const reactedPosts = await Like.findAll({
-      where: {
-        userId: request.user.userId
-      }
-    })
-    return response.status(200).json({
-      reactedPosts: reactedPosts
-    })
     const { caption, hashtag, sortBy } = request.query;
     switch (sortBy) {
       // sort for homepage display
@@ -30,7 +19,7 @@ export default class PostsController {
         break;
     }
   }
-
+ 
   static async getPostsById(request, response) {
     // populate comments, likes & shares
     // return 200 OK and the response
