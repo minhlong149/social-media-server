@@ -1,6 +1,7 @@
-const User = require ("../models/user.model");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+
+import User from '../models/user.model.js';
 
 export default class UsersController {
   static async getUsers(request, response) {
@@ -23,10 +24,10 @@ export default class UsersController {
         // return 400 Bad Request if missing values
         return response.status(400).json({ error: 'Missing required values' });
       }
-      
+
       const hashed = await bcrypt.hash(request.body.password, 10);
 
-      const newUser = new User ({
+      const newUser = new User({
         username: request.body.username,
         email: request.body.email,
         phone: request.body.phone,
@@ -37,9 +38,9 @@ export default class UsersController {
         dateOfBirth: request.body.dateOfBirth,
         address: request.body.address,
         avatarURL: request.body.avatarURL,
-        friendsList: [],  
+        friendsList: [],
       });
-  
+
       const user = await newUser.save();
       // return 201 Created if success and return the created object
       response.status(201).json(user);
@@ -53,34 +54,31 @@ export default class UsersController {
     // return 401 Unauthorized if credential invalid
     try {
       const { username, email, phone, password } = request.body;
-      const user = await User.findOne({username});
+      const user = await User.findOne({ username });
 
       if (!user) {
-        return response.status(404).json("Wrong username!");
+        return response.status(404).json('Wrong username!');
       }
 
-      const validPassword = await bcrypt.compare(
-        request.body.password,
-        user.password
-      )
+      const validPassword = await bcrypt.compare(request.body.password, user.password);
 
       if (!validPassword || user.email !== email) {
-        return response.status(401).json({ error: "Credential invalid!" });
+        return response.status(401).json({ error: 'Credential invalid!' });
       }
-      if(user && validPassword && user.email === email) { 
+      if (user && validPassword && user.email === email) {
         const accessToken = jwt.sign(
           {
             id: user.id,
             admin: user.admin,
           },
           process.env.JWT_ACCESS_KEY,
-          { expiresIn: "1d" }
+          { expiresIn: '1d' },
         );
         const { password, ...others } = user._doc;
-        return response.status(200).json({ ...others, accessToken});
+        return response.status(200).json({ ...others, accessToken });
       }
     } catch (error) {
-        return response.status(500).json({ error: error.message });
+      return response.status(500).json({ error: error.message });
     }
   }
 
