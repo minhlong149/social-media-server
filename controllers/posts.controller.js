@@ -1,5 +1,7 @@
 import Post from '../models/post.model.js';
 import User from '../models/user.model.js';
+import Comment from '../models/comment.model.js';
+
 export default class PostsController {
   static async getPosts(request, response) {
     // return 200 OK and the response, WITH the likes and comments count !!
@@ -18,8 +20,7 @@ export default class PostsController {
       // sort for homepage display
       case 'latest':
         // sorted by date post
-        var latest = { timestamps: -1 };
-        postsList = postsGetDefault.sort(latest);
+        postsList = postsGetDefault.sort((a, b) => b.createdAt - a.createdAt);
         break;
 
       case 'popular':
@@ -29,18 +30,19 @@ export default class PostsController {
          postsGetDefault.map(async (post) => {
            const populatedPost = await Post.findById(post.id)
              .populate('likes')
-             //.populate('comments')
+             .populate('comments')
              .populate('shares');
            return {
              post: populatedPost,
              points:
                populatedPost.likes.length +
-               //populatedPost.comments.length * 2 +
+               populatedPost.comments.length * 2 +
                populatedPost.shares.length * 3,
            };
          }),
        );
         postsList = posts.sort((a, b) => b.points - a.points);
+       // console.log(postsList);
         break;
 
       default:
@@ -50,15 +52,17 @@ export default class PostsController {
         }
         else if (hashtag) {
           postsList = postsGetDefault.filter((post) => post.hashtags.includes(hashtag));
-        } else postsList = postsGetDefault;
+        }
+        else postsList = postsGetDefault;
         break;
     }
-    try {
-      response.status(200).json(postsList);
-    }
-    catch (err) {
-      response.status(500).json(err);
-    }
+
+   try {
+     response.status(200).json(postsList);
+   } catch (error) {
+     response.status(500).json({ message: error.message });
+     response.json(postsList);
+   }
   }
 
   static async getPostsById(request, response) {
