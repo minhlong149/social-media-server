@@ -5,47 +5,56 @@ export default class PostsController {
     // return 200 OK and the response, WITH the likes and comments count !!
     const { caption, hashtag, sortBy } = request.query;
     //Lấy tất cả các bài viết của bạn bè và của chính mình.
-    const currentUser = await User.findById(request.body.id);
-    const userPosts = await Post.find({ author: currentUser._id }); //lỗi không lấy được _id 
+    const currentUser = await User.findById(request.body.id); 
+    const userPosts = await Post.find({ author: currentUser.id });
     const friendPosts = await Promise.all(
-      currentUser.friendsList.map((friendId) => {
-        return Post.find({ author: friendId});
-      }),
+      currentUser.friendsList.map((userId) => {
+        return Post.find({ author: userId });
+      }) 
     );
-    postsGetDefault = userPosts.concat(...friendPosts);
-
-    const filter = {};
-    let posts;
+    const postsGetDefault = userPosts.concat(...friendPosts);
+    let postsList;
     switch (sortBy) {
       // sort for homepage display
       case 'latest':
         // sorted by date post
         var latest = { timestamps: -1 };
-        posts = postsList.sort(latest);
+        postsList = postsGetDefault.sort(latest);
         break;
 
       case 'popular':
         // sorted by a scoring system
         //Tính điểm để sắp xếp theo độ phổ biên
-        let postsList = {
-          post: postsGetDefault,
-          score:
-            postsGetDefault.like.length() +
-            postsGetDefault.comments.length() * 2 +
-            postsGetDefault.shares.length() * 3,
-        };
-
-        posts = postsList.sort({ score: -1 });
+       const posts = await Promise.all(
+         postsGetDefault.map(async (post) => {
+           const populatedPost = await Post.findById(post.id)
+             .populate('likes')
+             //.populate('comments')
+             .populate('shares');
+           return {
+             post: populatedPost,
+             points:
+               populatedPost.likes.length +
+               //populatedPost.comments.length * 2 +
+               populatedPost.shares.length * 3,
+           };
+         }),
+       );
+        postsList = posts.sort((a, b) => b.points - a.points);
         break;
 
       default:
         // don't sort, filter by caption or ONE hashtag for searching
-        if (caption) filter.caption = caption;
-        else if (hashtag) filter.hashtag = hashtag;
+        if (caption) {
+          postsList = postsGetDefault.filter(post => post.caption.includes(caption));
+        }
+        else if (hashtag) {
+          postsList = postsGetDefault.filter((post) => post.hashtags.includes(hashtag));
+        } else postsList = postsGetDefault;
         break;
     }
     try {
-      response.status(200).json(posts.find(filter));
+      response.status(200).json(postsList);
     }
     catch (err) {
       response.status(500).json(err);
