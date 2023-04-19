@@ -10,7 +10,7 @@ export function getRandomUser() {
   const firstName = faker.name.firstName(gender);
   const lastName = faker.name.lastName(gender);
 
-  const username = faker.internet.userName(firstName, lastName);
+  const username = removeAccents(faker.internet.userName(firstName, lastName));
   const email = faker.internet.email(firstName, lastName);
 
   const phone = faker.phone.number('213-###-###');
@@ -32,4 +32,8 @@ export function getRandomUser() {
     address,
     avatarURL,
   };
+}
+
+function removeAccents(string) {
+  return string.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
