@@ -16,8 +16,7 @@ export default class UsersController {
     else if (phone) filter.phone = phone;
     try {
       const userList = await User.find(filter);
-      const countUser = await User.countDocuments(filter);
-      if(countUser != 0)
+      if (userList.length != 0) 
         response.status(200).json(userList);
       else response.status(404).json('Not found this user!')
     }
