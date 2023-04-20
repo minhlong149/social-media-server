@@ -4,54 +4,86 @@ import User from '../models/user.model.js';
 export default class PostsController {
   static async getPosts(request, response) {
     const { caption, hashtag, sortBy } = request.query;
-    const { userID } = request.body;
-
+    const { userID, numOfPage } = request.body;
+    const postPerPage = 20;
     try {
-
       const currentUser = await User.findById(userID);
       const userFriendsIds = currentUser.friendsList.map((friend) => friend);
 
       // TODO: Check if user ID is valid (found in DB)
       //Kiểm tra có đang là bạn bè hay không?
-      const friendsList = userFriendsIds.filter(friend => friend.status.includes("accepted")).map(friend => friend.userId);
+      const friendsList = userFriendsIds.filter((friend) => friend.status.includes("accepted")).map(friend => friend.userId);
       //Tất cả các user(bao gồm người dùng hiện tại và bạn bè).
       const allIds = [currentUser.id, ...friendsList];
-
+      let res;
       switch (sortBy) {
         case 'latest':
           //Kiểm tra các bài post có author nằm trong danh sách user và sắp xếp theo ngày đăng gần nhất.
-          const latestPosts = await Post.find({ author: { $in: allIds } })
-            .sort({ createdAt: -1 });
+          const latestPosts = await Post.find({
+            author: { $in: allIds },
+            privacy: { $in: ['public', 'friend'] },
+          })
+            .sort({ createdAt: -1 })
+            .limit(postPerPage)
+            .skip(postPerPage * numOfPage);
 
-          let res = {
+          //Kết quả trả về
+          res = {
             posts: latestPosts,
-            total: latestPosts.length,
+            totalpost: latestPosts.length,
+            page: numOfPage,
           };
           response.json(res);
           break;
 
         case 'popular':
           // sorted by a scoring system
-          const popularPosts = (await Post.find({ author: { $in: allIds } })).map((post) => {
+          const popularPosts = (
+            await Post.find({ author: { $in: allIds }, privacy: { $in: ['public', 'friend'] } })
+              .sort({ createdAt: -1 })
+              .limit(postPerPage)
+              .skip(postPerPage * numOfPage)
+          ).map((post) => {
             return {
               posts: post,
-              score: post.likes.length +
-                post.comments.length * 2 +
-                post.shares.length * 3,
-            }
+              score: post.likes.length + post.comments.length * 2 + post.shares.length * 3,
+            };
           });
           popularPosts.sort((a, b) => b.score - a.score);
-          response.json(popularPosts);
+          //Kết quả trả về
+          res = {
+            posts: popularPosts,
+            totalpost: popularPosts.length,
+            page: numOfPage,
+          };
+          response.json(res);
+          break;
         default:
           // don't sort, filter by caption or ONE hashtag for searching
-          let postsList = await Post.find({ author: { $in: allIds } });
+          let filterPosts = await Post.find({
+            author: { $in: allIds },
+            privacy: { $in: ['friend', 'public'] },
+          });
+          
           if (caption) {
-            postsList = postsList.filter((post) => post.caption.includes(caption));
+            filterPosts = filterPosts
+              .filter((post) => post.caption.includes(caption))
+              .slice(numOfPage * postPerPage, (numOfPage + 1) * postPerPage);
           }
           else if (hashtag) {
-            postsList = postsList.filter((post) => post.hashtags.includes(hashtag));
+            filterPosts = filterPosts
+              .filter((post) => post.hashtags.includes(hashtag))
+              .slice(numOfPage * postPerPage, (numOfPage + 1) * postPerPage);
           }
-          response.json(postsList);
+
+          //Kết quả trả về
+          res = {
+            posts: filterPosts,
+            totalpost: filterPosts.length,
+            page: numOfPage,
+          };
+
+          response.json(res);
           break;
       }
     } catch (error) {
