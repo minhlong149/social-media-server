@@ -9,9 +9,9 @@ const postsRouter = express.Router();
 postsRouter.get('/', PostsController.getPosts);
 postsRouter.post('/', PostsController.createPost);
 
-postsRouter.get('/:userId', PostsController.getPostsById);
-postsRouter.put('/:userId', PostsController.updatePostsById);
-postsRouter.delete('/:userId', PostsController.deletePostsById);
+postsRouter.get('/:postId', PostsController.getPostsById);
+postsRouter.put('/:postId', PostsController.updatePostsById);
+postsRouter.delete('/:postId', PostsController.deletePostsById);
 
 postsRouter.post('/:postId/likes', LikesController.addLike);
 postsRouter.delete('/:postId/likes/:userId', LikesController.removeLike);
