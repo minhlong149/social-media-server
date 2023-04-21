@@ -1,4 +1,5 @@
-import Post from "../models/post.model";
+import Post from "../models/post.model.js";
+import User from "../models/user.model.js";
 
 export default class PostsController {
   static async getPosts(request, response) {
@@ -23,28 +24,30 @@ export default class PostsController {
   static async getPostsById(request, response) {
     // populate comments, likes & shares
     // return 200 OK and the response
-    const { postId } = request.params;
-    const post = await Post.findById(postId).populate("comment", "like", "share");
-    return response.status(200).json(post);
+    try {
+      const { postId } = request.params;
+      const post = await Post.findById(postId);
+      response.status(200).json(post);
+    } catch(error) {
+      response.status(500).json(error.message);
+    }
   }
 
   static async createPost(request, response) {
     // post object contain the author id, caption, mediaURL, privacy and hashtags
     // return 201 Created if success and return the created object
     // return 400 Bad Request if missing values
-    try {
       const post = request.body;
-      post.userId = request.user.userId;
-      post.caption = request.user.caption;
-      post.mediaURL = request.user.mediaURL;
-      post.privacy = request.user.privacy;
-      post.hashtags = request.user.hashtags;
-      await Post.create(post);
-      return response.status(201).json(post);
-    } catch (error) {
-      return 400;
-    }
-  }
+      const newPost = await Post(post);
+      try {
+        const savedPost = await newPost.save();
+        response.status(201).json(savedPost);
+      } catch (error) {
+        response.status(500).json(error);
+      }
+
+      
+}
 
   static async updatePostsById(request, response) {
     // post object contain the author id, caption, mediaURL, privacy and hashtags
@@ -52,23 +55,12 @@ export default class PostsController {
     // return 400 Bad Request if values is invalid
     try{
       const { postId } = request.params;
-      const post = request.body;
-      await Post.updateMany({
-        userId: request.userId,
-        caption: request.caption,
-        mediaURL: request.mediaURL,
-        privacy: request.privacy,
-        hashtags: request.hashtags
-      },
-      {
-        where: {
-          username: request.username
-        }
-      });
-      return response.status(200).json(post);
+      const post = await Post.findById(postId);
+        await post.updateOne({$set: request.body});
+        response.status(200).json("OK");
 
   } catch (error) {
-    return 400;
+    response.status(400).json("values is invalid");
   }
 }
 
@@ -78,13 +70,11 @@ export default class PostsController {
     // return 400 Bad Request if values is invalid
     try{
       const { postId } = request.params;
-      await Post.destroy({
-        where: {
-          id: postId,
-        }
-      });
+      const post = await Post.findById(postId);
+        await post.deleteOne();
+        response.status(204).json("No Content");
     } catch (error) {
-      return 400;
+      response.status(400).json("values is invalid");
     }
   }
 }
