@@ -1,6 +1,13 @@
+<<<<<<< HEAD
 const User = require ("../models/user.model");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+=======
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+
+import User from '../models/user.model.js';
+>>>>>>> f0fd0b347b13fb6386f30917326a4da812cb08fe
 
 export default class UsersController {
   static async getUsers(request, response) {
@@ -13,6 +20,14 @@ export default class UsersController {
     // populate friendsList & posts
     // return 200 OK and the response
     const { userId } = request.params;
+    try {
+      const { userId } = request.params;
+      const user = await User.findById(userId);
+      response.status(200).json(user);
+    } 
+    catch(error) {
+      response.status(500).json(error.message);
+    }
   }
 
   static async createUser(request, response) {
@@ -23,10 +38,17 @@ export default class UsersController {
         // return 400 Bad Request if missing values
         return response.status(400).json({ error: 'Missing required values' });
       }
+<<<<<<< HEAD
       
       const hashed = await bcrypt.hash(request.body.password, 10);
 
       const newUser = new User ({
+=======
+
+      const hashed = await bcrypt.hash(request.body.password, 10);
+
+      const newUser = new User({
+>>>>>>> f0fd0b347b13fb6386f30917326a4da812cb08fe
         username: request.body.username,
         email: request.body.email,
         phone: request.body.phone,
@@ -37,9 +59,9 @@ export default class UsersController {
         dateOfBirth: request.body.dateOfBirth,
         address: request.body.address,
         avatarURL: request.body.avatarURL,
-        friendsList: [],  
+        friendsList: [],
       });
-  
+
       const user = await newUser.save();
       // return 201 Created if success and return the created object
       response.status(201).json(user);
@@ -53,12 +75,13 @@ export default class UsersController {
     // return 401 Unauthorized if credential invalid
     try {
       const { username, email, phone, password } = request.body;
-      const user = await User.findOne({username});
+      const user = await User.findOne({ username });
 
       if (!user) {
-        return response.status(404).json("Wrong username!");
+        return response.status(404).json('Wrong username!');
       }
 
+<<<<<<< HEAD
       const validPassword = await bcrypt.compare(
         request.body.password,
         user.password
@@ -68,33 +91,56 @@ export default class UsersController {
         return response.status(401).json({ error: "Credential invalid!" });
       }
       if(user && validPassword && user.email === email) { 
+=======
+      const validPassword = await bcrypt.compare(request.body.password, user.password);
+
+      if (!validPassword || user.email !== email) {
+        return response.status(401).json({ error: 'Credential invalid!' });
+      }
+      if (user && validPassword && user.email === email) {
+>>>>>>> f0fd0b347b13fb6386f30917326a4da812cb08fe
         const accessToken = jwt.sign(
           {
             id: user.id,
             admin: user.admin,
           },
           process.env.JWT_ACCESS_KEY,
-          { expiresIn: "1d" }
+          { expiresIn: '1d' },
         );
         const { password, ...others } = user._doc;
-        return response.status(200).json({ ...others, accessToken});
+        return response.status(200).json({ ...others, accessToken });
       }
     } catch (error) {
-        return response.status(500).json({ error: error.message });
+      return response.status(500).json({ error: error.message });
     }
   }
 
-  static async updateUsersById(request, response) {
+    static async updateUsersById(request, response) {
     // user object contain the credential and basic profile info
     // return 200 OK and the response
     // return 400 Bad Request if values is invalid
-    const { userId } = request.params;
-    const user = request.body;
+    try{
+      const { userId } = request.params;
+      const user = await User.findById(userId);
+        await user.updateOne({$set: request.body});
+        response.status(200).json('OK');
+    } 
+    catch (error) {
+      response.status(400).json('values is invalid');
+    } 
   }
 
   static async deleteUsersById(request, response) {
     // ALWAY return 204 No Content
     // return 400 Bad Request if values is invalid
-    const { userId } = request.params;
+    try{
+      const { userId } = request.params;
+      const user = await User.findById(userId);
+        await user.deleteOne();
+        response.status(204).json('No User');
+    } 
+    catch (error) {
+      response.status(400).json('values is invalid');
+    }
   }
 }
