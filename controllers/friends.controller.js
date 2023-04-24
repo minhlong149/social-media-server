@@ -171,7 +171,6 @@ export default class FriendsController {
         const {firstName, lastName, avatarURL } = friend
         const friendId = friends[i].userId
         friendList.push({friendId, firstName, lastName, avatarURL})
-        console.log(friendList[i])
       }
       response.status(200).json(friendList)
     } catch (error) {
