@@ -1,4 +1,6 @@
-const User = require('../models/user.model');
+import mongoose from "mongoose";
+import User from "../models/user.model.js"
+const ObjectId = mongoose.Types.ObjectId
 //here uses the status value in friendsList to indicate friend or friend request
 //status: '1' means friend, status: '0' means friend request
 export default class FriendsController {
@@ -7,23 +9,28 @@ export default class FriendsController {
     const { pending } = request.query;
     try {
       // return 200 OK if success and the response
-      let user = await User.findById({ userId: userId });
-      let friends = await Promise.all(
-        user.find({ friendsList: { status: '1' } }).friendsList.map((userId) => {
-          return User.findById({ userId: userId });
-        }),
-      );
+      let user = await User.findById(userId);
+      let friends = []
+      for (let i in user.friendsList)
+      {
+        if(user.friendsList[parseInt(i)]["status"] == "accepted")
+        {
+          friends.push(user.friendsList[parseInt(i)]["userId"])
+          console.log(user.friendsList[parseInt(i)]["userId"])
+        }
+      }
       let friendList = [];
-      friends.map((friend) => {
-        const { userId, firstName, lastName, avatarURL } = friend;
-        friendList.push({ userId, firstName, lastName, avatarURL });
-      });
+      for ( let i in friends)
+      {
+        let friend = await User.findById(friends[i])
+        const {firstName, lastName, avatarURL } = friend
+        const friendId = friends[i].userId
+        friendList.push({friendId, firstName, lastName, avatarURL})
+      }
       response.status(200).json(friendList);
-    } catch (error) {
+    } catch (error) { 
       // return 400 Bad Request if ID is invalid
-      return response.status(400).json({
-        error: errorhandler.getErrorMessage(error),
-      });
+      response.status(500).json({ message: error.message });
     }
   }
 
@@ -32,22 +39,35 @@ export default class FriendsController {
     // return 400 Bad Request if IDs is invalid
     const { userId } = request.params;
     const { friendId } = request.body;
+    
     try {
-      let user = await User.findById({ userId: userId });
-      if (user.friendsList.userId.includes(friendId)) {
-        if (user.find({ userId: 'friendId' }.friendsList.status == '1')) {
-          res.status(403).json('You and this user is already friend');
-        } else {
-          res.status(403).json('You have already send a friend request to this user');
+      
+      let user = await User.findById(userId);
+      let isFriend = false;
+      for (let i in user.friendsList)
+      {
+        if(user.friendsList[parseInt(i)]["userId"] == friendId)
+        {
+          isFriend = true;
+          if (user.friendsList[parseInt(i)]["status"] == "pending")
+          {
+            response.status(400).json("You have already sent a friend request to this person.")
+          }
+          else{
+            response.status(400).json("You and this person is already friend")
+          }
+          break;
+          
         }
-      } else {
-        await user.update({}, { $push: { friendsList: { UserId: friendId, status: '0' } } });
-        res.status(201).json(user);
       }
-    } catch (error) {
-      return response.status(400).json({
-        error: errorhandler.getErrorMessage(error),
-      });
+      if(isFriend == false){
+        await User.findOneAndUpdate({_id: userId}, { $push: { friendsList: {userId: friendId, status: "pending" } }});
+        await User.findOneAndUpdate({_id: friendId}, { $push: { friendsList: {userId: userId, status: "pending" } }});
+        response.status(201).json(user);
+      }
+      }
+     catch (error) {
+      response.status(400).json({ message: error.message });
     }
   }
 
@@ -56,36 +76,60 @@ export default class FriendsController {
     // return 400 Bad Request if IDs is invalid
     const { userId, friendId } = request.params;
     try {
-      let user = await User.findById({ userId: userId });
-      if (!user.friendsList.userId.includes(friendId)) {
-        res.status(403).json("Friend request doesn't exists.");
-      } else {
-        await user.updateOne({}, { friendsList: { userId: friendId, status: '1' } });
-        res.status(201).json(user);
+      let user = await User.findById(userId);
+      let isRequestSent = false;
+      for (let i in user.friendsList)
+      {
+        if(user.friendsList[parseInt(i)]["userId"] == friendId)
+        {
+          isRequestSent = true;
+          if (user.friendsList[parseInt(i)]["status"] == "accepted")
+          {
+            response.status(400).json("You and this person is already friend")
+          }else
+          {
+          await User.updateOne({_id: userId, "friendsList.userId": friendId}, {$set: {"friendsList.$.status": "accepted"}})
+          await User.updateOne({_id: friendId, "friendsList.userId": userId}, {$set: {"friendsList.$.status": "accepted"}})
+          response.status(201).json(user);
+          }
+          break; 
+        }
       }
-    } catch (error) {
-      return response.status(400).json({
-        error: errorhandler.getErrorMessage(error),
-      });
-    }
+      if(isRequestSent == false)
+        {
+          response.status(400).json("Friend request doesn't exist.")
+        }
+  }catch(error)
+  {
+    response.status(400).json({ message: error.message });
   }
+}
 
   static async removeFriend(request, response) {
     // ALWAY return 204 No Content
     // return 400 Bad Request if IDs is invalid
     const { userId, friendId } = request.params;
     try {
-      let user = await User.findById({ userId: userId });
-      if (!user.friendsList.userId.includes(friendId)) {
-        res.status(403).json("Friend doesn't exists.");
-      } else {
-        await user.update({}, { $pull: { friendsList: { userId: friendId } } });
-        res.status(204);
+      let user = await User.findById(userId);
+      let isFriend = false;
+      for (let i in user.friendsList)
+      {
+        if(user.friendsList[parseInt(i)]["userId"] == friendId)
+        {
+          isFriend = true;
+          await User.updateOne({_id: userId},{$pull: {friendsList: {userId: friendId}}})
+          await User.updateOne({_id: friendId},{$pull: {friendsList: {userId: userId}}})
+          response.status(201).json(user);
+        }
       }
-    } catch (error) {
-      return response.status(400).json({
-        error: errorhandler.getErrorMessage(error),
-      });
+      if(isFriend == false)
+      {
+        response.status(400).json("You and this person is not friend")
+      }
+      
+      }
+     catch (error) {
+      response.status(400).json({ message: error.message });
     }
   }
 
@@ -94,33 +138,44 @@ export default class FriendsController {
     // return 400 Bad Request if ID is invalid
     const { userId } = request.params;
     try {
-      let user = await User.findById({ userId: userId });
-      let friendOfUser = [];
-      await Promise.all(
-        user
-          .find({ friendsList: { status: '1' } })
-          .friendsList.map((userId) => friendOfUser.push(userId)),
-      );
-      let friendsOfFriends = [];
-      for (const Id in FriendOfUser) {
-        let friend = User.findById({ userId: Id });
-        await Promise.all(
-          friend.find({ friendsList: { status: '1' } }).friendsList.map((userId) => {
-            if (
-              !friendOfUser.includes(userId) &&
-              !friendsOfFriends.includes(userId) &&
-              userId !== user.userId
-            ) {
-              friendsOfFriends.push(userId);
-            }
-          }),
-        );
+      let user = await User.findById(userId);
+      let myFriendList = []
+      let sameFriendsList = []
+      for (let i in user.friendsList)
+      {
+        myFriendList.push(user.friendsList[parseInt(i)]["userId"])
       }
-      res.status(200).json(friendsOfFriends);
+      for (let i in myFriendList)
+      {
+        let friend = await User.findById(myFriendList[parseInt(i)])
+        for (let j in friend.friendsList)
+        {
+          if(JSON.stringify(myFriendList).indexOf(JSON.stringify(friend.friendsList[parseInt(j)]["userId"])) != -1 && JSON.stringify(sameFriendsList).indexOf(JSON.stringify(friend.friendsList[parseInt(j)]["userId"])) == -1 )
+          {
+            sameFriendsList.push(friend.friendsList[parseInt(j)]["userId"])
+          }
+        }
+      }
+      let friends = []
+      for (let i in user.friendsList)
+      {
+        if(user.friendsList[parseInt(i)]["status"] == "accepted")
+        {
+          friends.push(user.friendsList[parseInt(i)]["userId"])
+        }
+      }
+      let friendList = [];
+      for ( let i in friends)
+      {
+        let friend = await User.findById(friends[i])
+        const {firstName, lastName, avatarURL } = friend
+        const friendId = friends[i].userId
+        friendList.push({friendId, firstName, lastName, avatarURL})
+        console.log(friendList[i])
+      }
+      response.status(200).json(friendList)
     } catch (error) {
-      return response.status(400).json({
-        error: errorhandler.getErrorMessage(error),
-      });
+      response.status(400).json({ message: error.message });
     }
   }
 }
