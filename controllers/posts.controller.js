@@ -27,7 +27,7 @@ export default class PostsController {
     // return 200 OK and the response
     try {
       const { postId } = request.params;
-      const post = await Post.findById(postId).populate('comments').populate('likes').populate('shares');//.populate('comments');
+      const post = await Post.findById(postId).populate('comments').populate('likes').populate('shares');
       response.status(200).json(post);
     } catch(error) {
       response.status(500).json(error.message);
@@ -41,7 +41,7 @@ export default class PostsController {
       const post = request.body;
       const newPost = await Post(post);
       try {
-        if(! post.author || ! post.caption || ! post.mediaURL || ! post.mediaURL || !post.privacy || !post.hashtag) {
+        if(! post.author || ! post.caption || !post.privacy) {
           return response.status(400).json("Missing values");
         }
         const savedPost = await newPost.save();
@@ -74,9 +74,10 @@ export default class PostsController {
     // return 400 Bad Request if values is invalid
     try{
       const { postId } = request.params;
-      const post = await Post.findById(postId).populate('comments');
+      const post = await Post.findById(postId);
+        Comment.findByIdAndRemove({_id: {$in: post.comments}});
         await post.deleteOne();
-        response.status(204).json("No Content");
+        response.status(204).json("No Content");         
     } catch (error) {
       response.status(400).json("values is invalid");
     }
