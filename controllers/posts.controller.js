@@ -27,7 +27,15 @@ export default class PostsController {
     // return 200 OK and the response
     try {
       const { postId } = request.params;
-      const post = await Post.findById(postId).populate('comments').populate('likes').populate('shares');
+      const post = await Post.findById(postId)
+        .populate({
+          path: 'author likes shares',
+          select: 'username firstName lastName avatarURL id',
+        })
+        .populate({
+          path: 'comments',
+          populate: { path: 'userID', select: 'username firstName lastName avatarURL id' },
+        });
       response.status(200).json(post);
     } catch(error) {
       response.status(500).json(error.message);
