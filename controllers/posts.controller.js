@@ -4,7 +4,7 @@ import User from '../models/user.model.js';
 export default class PostsController {
   static async getPosts(request, response) {
     const { caption, hashtag, sortBy } = request.query;
-    const { userID, numOfPage } = request.body;
+    const { userID, numOfPage = 0 } = request.body;
     const postPerPage = 20;
     try {
       const currentUser = await User.findById(userID);
@@ -64,7 +64,7 @@ export default class PostsController {
             author: { $in: allIds },
             privacy: { $in: ['friend', 'public'] },
           });
-          
+
           if (caption) {
             filterPosts = filterPosts
               .filter((post) => post.caption.includes(caption))
