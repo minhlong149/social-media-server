@@ -31,6 +31,14 @@ export default class UsersController {
     // populate friendsList & posts
     // return 200 OK and the response
     const { userId } = request.params;
+    try {
+      const { userId } = request.params;
+      const user = await User.findById(userId);
+      response.status(200).json(user);
+    } 
+    catch(error) {
+      response.status(500).json(error.message);
+    }
   }
 
   static async createUser(request, response) {
@@ -99,17 +107,32 @@ export default class UsersController {
     }
   }
 
-  static async updateUsersById(request, response) {
+    static async updateUsersById(request, response) {
     // user object contain the credential and basic profile info
     // return 200 OK and the response
     // return 400 Bad Request if values is invalid
-    const { userId } = request.params;
-    const user = request.body;
+    try{
+      const { userId } = request.params;
+      const user = await User.findById(userId);
+        await user.updateOne({$set: request.body});
+        response.status(200).json('OK');
+    } 
+    catch (error) {
+      response.status(400).json('values is invalid');
+    } 
   }
 
   static async deleteUsersById(request, response) {
     // ALWAY return 204 No Content
     // return 400 Bad Request if values is invalid
-    const { userId } = request.params;
+    try{
+      const { userId } = request.params;
+      const user = await User.findById(userId);
+        await user.deleteOne();
+        response.status(204).json('No User');
+    } 
+    catch (error) {
+      response.status(400).json('values is invalid');
+    }
   }
 }
