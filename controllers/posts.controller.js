@@ -83,7 +83,7 @@ export default class PostsController {
     try{
       const { postId } = request.params;
       const post = await Post.findById(postId);
-        Comment.findByIdAndRemove({_id: {$in: post.comments}});
+        await Comment.deleteMany({ _id: { $in: post.comments } });
         await post.deleteOne();
         response.status(204).json("No Content");         
     } catch (error) {
