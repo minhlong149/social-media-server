@@ -1,23 +1,94 @@
 import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
+import Comment from "../models/comment.model.js";
 
 export default class PostsController {
   static async getPosts(request, response) {
-    // return 200 OK and the response, WITH the likes and comments count !!
     const { caption, hashtag, sortBy } = request.query;
-    switch (sortBy) {
-      // sort for homepage display
-      case 'latest':
-        // sorted by date post
-        break;
+    const { userID, numOfPage = 0 } = request.body;
+    const postPerPage = 20;
+    try {
+      const currentUser = await User.findById(userID);
+      const userFriendsIds = currentUser.friendsList.map((friend) => friend);
 
-      case 'popular':
-        // sorted by a scoring system
-        break;
+      // TODO: Check if user ID is valid (found in DB)
+      //Kiểm tra có đang là bạn bè hay không?
+      const friendsList = userFriendsIds.filter((friend) => friend.status.includes("accepted")).map(friend => friend.userId);
+      //Tất cả các user(bao gồm người dùng hiện tại và bạn bè).
+      const allIds = [currentUser.id, ...friendsList];
+      let res;
+      switch (sortBy) {
+        case 'latest':
+          //Kiểm tra các bài post có author nằm trong danh sách user và sắp xếp theo ngày đăng gần nhất.
+          const latestPosts = await Post.find({
+            author: { $in: allIds },
+            privacy: { $in: ['public', 'friend'] },
+          })
+            .sort({ createdAt: -1 })
+            .limit(postPerPage)
+            .skip(postPerPage * numOfPage);
 
-      default:
-        // don't sort, filter by caption or ONE hashtag for searching
-        break;
+          //Kết quả trả về
+          res = {
+            posts: latestPosts,
+            totalpost: latestPosts.length,
+            page: numOfPage,
+          };
+          response.json(res);
+          break;
+
+        case 'popular':
+          // sorted by a scoring system
+          const popularPosts = (
+            await Post.find({ author: { $in: allIds }, privacy: { $in: ['public', 'friend'] } })
+              .sort({ createdAt: -1 })
+              .limit(postPerPage)
+              .skip(postPerPage * numOfPage)
+          ).map((post) => {
+            return {
+              posts: post,
+              score: post.likes.length + post.comments.length * 2 + post.shares.length * 3,
+            };
+          });
+          popularPosts.sort((a, b) => b.score - a.score);
+          //Kết quả trả về
+          res = {
+            posts: popularPosts,
+            totalpost: popularPosts.length,
+            page: numOfPage,
+          };
+          response.json(res);
+          break;
+        default:
+          // don't sort, filter by caption or ONE hashtag for searching
+          let filterPosts = await Post.find({
+            author: { $in: allIds },
+            privacy: { $in: ['friend', 'public'] },
+          });
+
+          if (caption) {
+            filterPosts = filterPosts
+              .filter((post) => post.caption.includes(caption))
+              .slice(numOfPage * postPerPage, (numOfPage + 1) * postPerPage);
+          }
+          else if (hashtag) {
+            filterPosts = filterPosts
+              .filter((post) => post.hashtags.includes(hashtag))
+              .slice(numOfPage * postPerPage, (numOfPage + 1) * postPerPage);
+          }
+
+          //Kết quả trả về
+          res = {
+            posts: filterPosts,
+            totalpost: filterPosts.length,
+            page: numOfPage,
+          };
+
+          response.json(res);
+          break;
+      }
+    } catch (error) {
+      response.status(500).json({ message: error.message });
     }
   }
  
@@ -26,7 +97,15 @@ export default class PostsController {
     // return 200 OK and the response
     try {
       const { postId } = request.params;
-      const post = await Post.findById(postId);
+      const post = await Post.findById(postId)
+        .populate({
+          path: 'author likes shares',
+          select: 'username firstName lastName avatarURL id',
+        })
+        .populate({
+          path: 'comments',
+          populate: { path: 'userID', select: 'username firstName lastName avatarURL id' },
+        });
       response.status(200).json(post);
     } catch(error) {
       response.status(500).json(error.message);
@@ -40,6 +119,9 @@ export default class PostsController {
       const post = request.body;
       const newPost = await Post(post);
       try {
+        if(! post.author || ! post.caption || !post.privacy) {
+          return response.status(400).json("Missing values");
+        }
         const savedPost = await newPost.save();
         response.status(201).json(savedPost);
       } catch (error) {
@@ -71,8 +153,9 @@ export default class PostsController {
     try{
       const { postId } = request.params;
       const post = await Post.findById(postId);
+        await Comment.deleteMany({ _id: { $in: post.comments } });
         await post.deleteOne();
-        response.status(204).json("No Content");
+        response.status(204).json("No Content");         
     } catch (error) {
       response.status(400).json("values is invalid");
     }

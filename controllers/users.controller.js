@@ -8,6 +8,23 @@ export default class UsersController {
     // allow to filter by queries
     // return 200 OK and the response
     const { firstName, lastName, username, email, phone } = request.query;
+    const filter = {};
+    if (firstName) filter.firstName = firstName;
+    else if (lastName) filter.lastName = lastName;
+    else if (username) filter.username = username;
+    else if (email) filter.email = email;
+    else if (phone) filter.phone = phone;
+    try {
+      const userList = await User.find(filter);
+      if (userList.length != 0) 
+        response.status(200).json(userList);
+      else response.status(404).json('Not found this user!')
+    }
+    catch (err) {
+      response.status(400).json({
+        error: errorhandler.getErrorMessage(error),
+      });
+    }
   }
 
   static async getUsersById(request, response) {
