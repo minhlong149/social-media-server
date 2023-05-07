@@ -1,13 +1,7 @@
-<<<<<<< HEAD
-const User = require ("../models/user.model");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
-=======
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 import User from '../models/user.model.js';
->>>>>>> f0fd0b347b13fb6386f30917326a4da812cb08fe
 
 export default class UsersController {
   static async getUsers(request, response) {
@@ -38,17 +32,10 @@ export default class UsersController {
         // return 400 Bad Request if missing values
         return response.status(400).json({ error: 'Missing required values' });
       }
-<<<<<<< HEAD
-      
-      const hashed = await bcrypt.hash(request.body.password, 10);
-
-      const newUser = new User ({
-=======
 
       const hashed = await bcrypt.hash(request.body.password, 10);
 
       const newUser = new User({
->>>>>>> f0fd0b347b13fb6386f30917326a4da812cb08fe
         username: request.body.username,
         email: request.body.email,
         phone: request.body.phone,
@@ -81,24 +68,12 @@ export default class UsersController {
         return response.status(404).json('Wrong username!');
       }
 
-<<<<<<< HEAD
-      const validPassword = await bcrypt.compare(
-        request.body.password,
-        user.password
-      )
-
-      if (!validPassword || user.email !== email) {
-        return response.status(401).json({ error: "Credential invalid!" });
-      }
-      if(user && validPassword && user.email === email) { 
-=======
       const validPassword = await bcrypt.compare(request.body.password, user.password);
 
       if (!validPassword || user.email !== email) {
         return response.status(401).json({ error: 'Credential invalid!' });
       }
       if (user && validPassword && user.email === email) {
->>>>>>> f0fd0b347b13fb6386f30917326a4da812cb08fe
         const accessToken = jwt.sign(
           {
             id: user.id,
