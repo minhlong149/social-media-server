@@ -5,20 +5,20 @@ export default class LikesController {
     const { userId } = request.body;
 
     try {
-      const comment = await Comment.findById(commentId);
-  
-      if (!comment) {
-        return response.status(404).json({ error: "Comment not found" });
+      const post = await Comment.findById(postId);
+
+      if (!post) {
+        return response.status(404).json({ error: "Post not found" });
       }
-  
+
       // Kiểm tra nếu người dùng đã like bài viết đó
-      if (comment.likes.includes(userId)) {
-        return response.status(409).json({ error: "User already liked this comment" });
+      if (post.likes.includes(userId)) {
+        return response.status(409).json({ error: "User already liked this post" });
       }
-  
-      comment.likes.push(userId);
-      await comment.save();
-  
+
+      post.likes.push(userId);
+      await post.save();
+
       return response.status(200).json({message: "Liked success"});
     } catch (error) {
       console.error(error);
@@ -33,19 +33,25 @@ export default class LikesController {
 
     try {
       const comment = await CommentModel.findById(commentId);
-  
+
       if (!comment) {
         return response.status(404).json({ error: "Comment not found" });
       }
-      
+
       // Kiểm tra nếu người dùng chưa like bài viết đó
       if (!comment.likes.includes(userId)) {
-        return response.status(400).json({ error: "Values is invalid" });
+        return response.status(400).json({ error: "Bad Request" });
       }
-  
-      comment.likes.pull(userId);
-      await comment.save();
-  
+
+
+      //Xóa id người like trong bài viết sau khi xóa like
+      const post = await Post.findById(postId);
+        if (!post) {
+          return response.status(400).send({ message: "Bad Request" });
+        }
+        post.likes.pull(userId);
+        await post.save();
+
       return response.status(204).json({message: "No Content"});
     } catch (error) {
       console.error(error);
