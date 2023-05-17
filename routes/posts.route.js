@@ -19,6 +19,7 @@ postsRouter.delete('/:postId/likes/:userId', LikesController.removeLike);
 postsRouter.get('/:postId/comments', CommentsController.getCommentsByPostId);
 postsRouter.post('/:postId/comments', CommentsController.addComments);
 postsRouter.put('/:postId/comments/:commentId', CommentsController.updateCommentsById);
+postsRouter.delete('/:postId/comments/:commentId', CommentsController.deleteCommentsById);
 
 export default postsRouter;
 
