@@ -20,6 +20,7 @@ postsRouter.delete('/:postId/likes/:userId', MiddlewareController.verifyToken, L
 postsRouter.get('/:postId/comments', CommentsController.getCommentsByPostId);
 postsRouter.post('/:postId/comments', MiddlewareController.verifyToken, CommentsController.addComments);
 postsRouter.put('/:postId/comments/:commentId', MiddlewareController.verifyToken, CommentsController.updateCommentsById);
+postsRouter.delete('/:postId/comments/:commentId', MiddlewareController.verifyToken, CommentsController.deleteCommentsById);
 
 export default postsRouter;
 
