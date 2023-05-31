@@ -1,5 +1,6 @@
 import Comment from "../models/comment.model.js";
 import Post from "../models/post.model.js";
+import { addNotification } from '../utils/notifications.js';
 
 export default class CommentsController {
   static async getCommentsByPostId(request, response) {
@@ -36,6 +37,14 @@ export default class CommentsController {
     post.comments.push(newComment.id);
     await post.save();
 
+    await addNotification(
+      new Notification({
+        user: post.author,
+        type: 'comment',
+        target: post.id,
+        targetModel: 'Post',
+      }),
+    );
   
     return response.status(201).json(newComment);
     } catch (error) {

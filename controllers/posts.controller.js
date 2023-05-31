@@ -2,6 +2,7 @@ import Comment from '../models/comment.model.js';
 import Notification from '../models/notification.model.js';
 import Post from '../models/post.model.js';
 import User from '../models/user.model.js';
+import { addNotification } from '../utils/notifications.js';
 
 export default class PostsController {
   static async getPosts(request, response) {
@@ -126,24 +127,14 @@ export default class PostsController {
       }
       const savedPost = await newPost.save();
 
-      // Sent notification to friends
-      const author = await User.findById(post.author);
-      const authorFriendsIds = author.friendsList
-        .filter((friend) => friend.status === 'accepted')
-        .map((friend) => friend.userId);
-      const authorFriends = { _id: { $in: authorFriendsIds } };
-
-      const notification = new Notification({
-        user: author.id,
-        type: 'post',
-        target: newPost.id,
-        targetModel: 'Post',
-      });
-      await notification.save();
-      const newNotification = { notification: notification.id };
-      const addNotification = { $push: { notifications: newNotification } };
-
-      await User.updateMany(authorFriends, addNotification);
+      await addNotification(
+        new Notification({
+          user: post.author,
+          type: 'post',
+          target: newPost.id,
+          targetModel: 'Post',
+        }),
+      );
 
       response.status(201).json(savedPost);
     } catch (error) {

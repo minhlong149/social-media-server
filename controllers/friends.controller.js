@@ -63,6 +63,16 @@ export default class FriendsController {
       if(isFriend == false){
         await User.findOneAndUpdate({_id: userId}, { $push: { friendsList: {userId: friendId, status: "pending" } }});
         await User.findOneAndUpdate({_id: friendId}, { $push: { friendsList: {userId: userId, status: "pending" } }});
+
+        await addNotification(
+          new Notification({
+            user: userId,
+            type: 'request',
+            target: friendId,
+            targetModel: 'User',
+          }),
+        );
+
         response.status(201).json(user);
       }
       }
@@ -90,6 +100,18 @@ export default class FriendsController {
           {
           await User.updateOne({_id: userId, "friendsList.userId": friendId}, {$set: {"friendsList.$.status": "accepted"}})
           await User.updateOne({_id: friendId, "friendsList.userId": userId}, {$set: {"friendsList.$.status": "accepted"}})
+          
+          await addNotification(
+            new Notification({
+              user: userId,
+              type: 'accept',
+              target: friendId,
+              targetModel: 'User',
+            }),
+          );
+
+          // TODO: only send notification to 1 friend
+
           response.status(201).json(user);
           }
           break; 
