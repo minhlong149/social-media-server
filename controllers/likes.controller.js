@@ -24,7 +24,7 @@ export default class LikesController {
 
       await addNotification(
         new Notification({
-          user: post.author,
+          user: userId,
           type: 'like',
           target: post.id,
           targetModel: 'Post',

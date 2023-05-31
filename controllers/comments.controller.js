@@ -39,7 +39,7 @@ export default class CommentsController {
 
     await addNotification(
       new Notification({
-        user: post.author,
+        user: comment.userId,
         type: 'comment',
         target: post.id,
         targetModel: 'Post',
