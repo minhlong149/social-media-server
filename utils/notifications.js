@@ -1,14 +1,14 @@
-import User from '../models/User.js';
-import Post from '../models/Post.js';
+import Post from '../models/post.model.js';
+import User from '../models/user.model.js';
 
 export async function addNotification(notification) {
   try {
     const targetUsers = await getTargetUsers(notification);
-    const newNotification = { notification: notification.id };
+    const newNotification = { notification: notification._id };
     const addNotification = { $push: { notifications: newNotification } };
 
     await notification.save();
-    await User.updateMany(targetUsers, addNotification);
+    await User.updateMany({ _id: { $in: targetUsers } }, addNotification);
   } catch (error) {
     console.log(error);
   }
@@ -30,7 +30,6 @@ async function getTargetUsers(notification) {
     case 'request':
     case 'accept':
       return [notification.target];
-      break;
 
     default:
       return [];
