@@ -1,4 +1,4 @@
-const jwt = require("jsonwebtoken");
+import jwt from 'jsonwebtoken';
 
 export default class MiddlewareController {
     static verifyToken(request, response, next) {
