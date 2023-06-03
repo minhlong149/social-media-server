@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import User from "../models/user.model.js"
+import { addNotification } from '../utils/notifications.js';
 const ObjectId = mongoose.Types.ObjectId
 //here uses the status value in friendsList to indicate friend or friend request
 //status: '1' means friend, status: '0' means friend request
