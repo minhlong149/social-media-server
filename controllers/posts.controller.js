@@ -64,7 +64,7 @@ export default class PostsController {
             author: { $in: allIds },
             privacy: { $in: ['friend', 'public'] },
           });
-          
+
           if (caption) {
             filterPosts = filterPosts
               .filter((post) => post.caption.includes(caption))
@@ -90,32 +90,61 @@ export default class PostsController {
       response.status(500).json({ message: error.message });
     }
   }
-
+ 
   static async getPostsById(request, response) {
     // populate comments, likes & shares
     // return 200 OK and the response
-    const { postId } = request.params;
+    try {
+      const { postId } = request.params;
+      const post = await Post.findById(postId);
+      response.status(200).json(post);
+    } catch(error) {
+      response.status(500).json(error.message);
+    }
   }
 
   static async createPost(request, response) {
     // post object contain the author id, caption, mediaURL, privacy and hashtags
     // return 201 Created if success and return the created object
     // return 400 Bad Request if missing values
-    const post = request.body;
-  }
+      const post = request.body;
+      const newPost = await Post(post);
+      try {
+        const savedPost = await newPost.save();
+        response.status(201).json(savedPost);
+      } catch (error) {
+        response.status(500).json(error);
+      }
+
+      
+}
 
   static async updatePostsById(request, response) {
     // post object contain the author id, caption, mediaURL, privacy and hashtags
     // return 200 OK and the response
     // return 400 Bad Request if values is invalid
-    const { postId } = request.params;
-    const post = request.body;
+    try{
+      const { postId } = request.params;
+      const post = await Post.findById(postId);
+        await post.updateOne({$set: request.body});
+        response.status(200).json("OK");
+
+  } catch (error) {
+    response.status(400).json("values is invalid");
   }
+}
 
   static async deletePostsById(request, response) {
     // remember to delete all the comments inside
     // ALWAY return 204 No Content
     // return 400 Bad Request if values is invalid
-    const { postId } = request.params;
+    try{
+      const { postId } = request.params;
+      const post = await Post.findById(postId);
+        await post.deleteOne();
+        response.status(204).json("No Content");
+    } catch (error) {
+      response.status(400).json("values is invalid");
+    }
   }
 }
