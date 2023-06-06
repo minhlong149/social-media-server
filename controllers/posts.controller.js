@@ -1,10 +1,13 @@
-import Post from '../models/post.model.js';
-import User from '../models/user.model.js';
+import Post from "../models/post.model.js";
+import User from "../models/user.model.js";
+import Comment from "../models/comment.model.js";
+
 
 export default class PostsController {
   static async getPosts(request, response) {
     const { caption, hashtag, sortBy } = request.query;
     const { userID, numOfPage } = request.query;
+
     const postPerPage = 20;
     try {
       const currentUser = await User.findById(userID);
@@ -96,7 +99,15 @@ export default class PostsController {
     // return 200 OK and the response
     try {
       const { postId } = request.params;
-      const post = await Post.findById(postId);
+      const post = await Post.findById(postId)
+        .populate({
+          path: 'author likes shares',
+          select: 'username firstName lastName avatarURL id',
+        })
+        .populate({
+          path: 'comments',
+          populate: { path: 'userID', select: 'username firstName lastName avatarURL id' },
+        });
       response.status(200).json(post);
     } catch(error) {
       response.status(500).json(error.message);
@@ -110,6 +121,9 @@ export default class PostsController {
       const post = request.body;
       const newPost = await Post(post);
       try {
+        if(! post.author || ! post.caption || !post.privacy) {
+          return response.status(400).json("Missing values");
+        }
         const savedPost = await newPost.save();
         response.status(201).json(savedPost);
       } catch (error) {
@@ -141,8 +155,9 @@ export default class PostsController {
     try{
       const { postId } = request.params;
       const post = await Post.findById(postId);
+        await Comment.deleteMany({ _id: { $in: post.comments } });
         await post.deleteOne();
-        response.status(204).json("No Content");
+        response.status(204).json("No Content");         
     } catch (error) {
       response.status(400).json("values is invalid");
     }
