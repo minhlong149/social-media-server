@@ -48,14 +48,14 @@ export default class PostsController {
               .skip(postPerPage * numOfPage)
           ).map((post) => {
             return {
-              posts: post,
+              post,
               score: post.likes.length + post.comments.length * 2 + post.shares.length * 3,
             };
           });
           popularPosts.sort((a, b) => b.score - a.score);
           //Kết quả trả về
           res = {
-            posts: popularPosts,
+            posts: popularPosts.map((post) => post.post),
             totalpost: popularPosts.length,
             page: numOfPage,
           };
