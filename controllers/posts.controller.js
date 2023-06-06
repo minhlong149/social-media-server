@@ -4,7 +4,7 @@ import User from '../models/user.model.js';
 export default class PostsController {
   static async getPosts(request, response) {
     const { caption, hashtag, sortBy } = request.query;
-    const { userID, numOfPage } = request.body;
+    const { userID, numOfPage } = request.query;
     const postPerPage = 20;
     try {
       const currentUser = await User.findById(userID);
