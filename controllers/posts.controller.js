@@ -2,10 +2,12 @@ import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
 import Comment from "../models/comment.model.js";
 
+
 export default class PostsController {
   static async getPosts(request, response) {
     const { caption, hashtag, sortBy } = request.query;
-    const { userID, numOfPage = 0 } = request.body;
+    const { userID, numOfPage } = request.query;
+
     const postPerPage = 20;
     try {
       const currentUser = await User.findById(userID);
