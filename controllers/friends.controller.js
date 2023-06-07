@@ -16,12 +16,15 @@ export default class FriendsController {
       let friends = []
       for (let i in user.friendsList)
       {
+
           friends.push(user.friendsList[parseInt(i)]["userId"] )
+
       }
       let friendList = [];
       for ( let i in friends)
       {
         let friend = await User.findById(friends[i])
+
         if(friend != null){
         const {firstName, lastName, avatarURL } = friend
         const friendId = friends[i]._id
@@ -46,6 +49,7 @@ export default class FriendsController {
       }
         friendList.push({friendId, firstName, lastName, avatarURL, status, sameFriend})
         }
+
       }
       response.status(200).json(friendList);
     } catch (error) { 
@@ -69,7 +73,9 @@ export default class FriendsController {
         if(user.friendsList[parseInt(i)]["userId"] == friendId)
         {
           isFriend = true;
+
           if (user.friendsList[parseInt(i)]["status"] == "pending" || user.friendsList[parseInt(i)]["status"] == "waiting" )
+
           {
             response.status(400).json("You have already sent a friend request to this person.")
           }
@@ -81,7 +87,9 @@ export default class FriendsController {
         }
       }
       if(isFriend == false){
+
         await User.findOneAndUpdate({_id: userId}, { $push: { friendsList: {userId: friendId, status: "waiting" } }});
+
         await User.findOneAndUpdate({_id: friendId}, { $push: { friendsList: {userId: userId, status: "pending" } }});
         response.status(201).json(user);
       }
@@ -160,6 +168,7 @@ export default class FriendsController {
     try {
       let user = await User.findById(userId);
       let myFriendList = []
+
       
       let friendsOfFriends = []
       for (let i in user.friendsList)
@@ -171,11 +180,13 @@ export default class FriendsController {
       }
 
       
+
       for (let i in myFriendList)
       {
         let friend = await User.findById(myFriendList[parseInt(i)])
         for (let j in friend.friendsList)
         {
+
           if(JSON.stringify(myFriendList).indexOf(JSON.stringify(friend.friendsList[parseInt(1)]["userId"])) == -1 && JSON.stringify(friendsOfFriends).indexOf(JSON.stringify(friend.friendsList[parseInt(1)]["userId"])) == -1 )
           {
             console.log(friend.friendsList[parseInt(1)]["userId"])
@@ -206,6 +217,7 @@ export default class FriendsController {
         friendsOfFriendsList.push({friendId, firstName, lastName, avatarURL, sameFriend})
       }
       response.status(200).json(friendsOfFriendsList)
+
     } catch (error) {
       response.status(400).json({ message: error.message });
     }
