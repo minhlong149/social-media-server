@@ -26,6 +26,10 @@ export default class PostsController {
             author: { $in: allIds },
             privacy: { $in: ['public', 'friend'] },
           })
+            .populate({
+              path: 'author',
+              select: 'username firstName lastName avatarURL id',
+            })
             .sort({ createdAt: -1 })
             .limit(postPerPage)
             .skip(postPerPage * numOfPage);
@@ -43,6 +47,10 @@ export default class PostsController {
           // sorted by a scoring system
           const popularPosts = (
             await Post.find({ author: { $in: allIds }, privacy: { $in: ['public', 'friend'] } })
+              .populate({
+                path: 'author',
+                select: 'username firstName lastName avatarURL id',
+              })
               .sort({ createdAt: -1 })
               .limit(postPerPage)
               .skip(postPerPage * numOfPage)
@@ -66,6 +74,9 @@ export default class PostsController {
           let filterPosts = await Post.find({
             author: { $in: allIds },
             privacy: { $in: ['friend', 'public'] },
+          }).populate({
+            path: 'author',
+            select: 'username firstName lastName avatarURL id',
           });
 
           if (caption) {
