@@ -2,10 +2,12 @@ import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
 import Comment from "../models/comment.model.js";
 
+
 export default class PostsController {
   static async getPosts(request, response) {
     const { caption, hashtag, sortBy } = request.query;
-    const { userID, numOfPage = 0 } = request.body;
+    const { userID, numOfPage } = request.query;
+
     const postPerPage = 20;
     try {
       const currentUser = await User.findById(userID);
@@ -24,6 +26,10 @@ export default class PostsController {
             author: { $in: allIds },
             privacy: { $in: ['public', 'friend'] },
           })
+            .populate({
+              path: 'author',
+              select: 'username firstName lastName avatarURL id',
+            })
             .sort({ createdAt: -1 })
             .limit(postPerPage)
             .skip(postPerPage * numOfPage);
@@ -41,19 +47,23 @@ export default class PostsController {
           // sorted by a scoring system
           const popularPosts = (
             await Post.find({ author: { $in: allIds }, privacy: { $in: ['public', 'friend'] } })
+              .populate({
+                path: 'author',
+                select: 'username firstName lastName avatarURL id',
+              })
               .sort({ createdAt: -1 })
               .limit(postPerPage)
               .skip(postPerPage * numOfPage)
           ).map((post) => {
             return {
-              posts: post,
+              post,
               score: post.likes.length + post.comments.length * 2 + post.shares.length * 3,
             };
           });
           popularPosts.sort((a, b) => b.score - a.score);
           //Kết quả trả về
           res = {
-            posts: popularPosts,
+            posts: popularPosts.map((post) => post.post),
             totalpost: popularPosts.length,
             page: numOfPage,
           };
@@ -64,6 +74,9 @@ export default class PostsController {
           let filterPosts = await Post.find({
             author: { $in: allIds },
             privacy: { $in: ['friend', 'public'] },
+          }).populate({
+            path: 'author',
+            select: 'username firstName lastName avatarURL id',
           });
 
           if (caption) {
