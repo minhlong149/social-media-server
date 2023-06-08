@@ -57,7 +57,7 @@ export default class PostsController {
           ).map((post) => {
             return {
               post,
-              score: post.likes.length + post.comments.length * 2 + post.shares.length * 3,
+              score: post.likes?.length + post.comments?.length * 2 + post.shares?.length * 3,
             };
           });
           popularPosts.sort((a, b) => b.score - a.score);
