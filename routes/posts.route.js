@@ -18,11 +18,9 @@ postsRouter.post('/:postId/likes', MiddlewareController.verifyToken, LikesContro
 postsRouter.delete('/:postId/likes/:userId', MiddlewareController.verifyToken, LikesController.removeLike);
 
 postsRouter.get('/:postId/comments', CommentsController.getCommentsByPostId);
-postsRouter.post('/:postId/comments', CommentsController.addComments);
-postsRouter.put('/:postId/comments/:commentId', CommentsController.updateCommentsById);
-postsRouter.delete('/:postId/comments/:commentId', CommentsController.deleteCommentsById);
-
-
+postsRouter.post('/:postId/comments', MiddlewareController.verifyToken, CommentsController.addComments);
+postsRouter.put('/:postId/comments/:commentId', MiddlewareController.verifyToken, CommentsController.updateCommentsById);
+postsRouter.delete('/:postId/comments/:commentId', MiddlewareController.verifyToken, CommentsController.deleteCommentsById);
 
 export default postsRouter;
 
