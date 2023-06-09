@@ -15,7 +15,8 @@ export default class UsersController {
     else if (email) filter.email = email;
     else if (phone) filter.phone = phone;
     try {
-      const userList = await User.find(filter);
+      let userList = await User.find();
+      userList = userList.filter((user) => user.username.includes(filter.username));
       if (userList.length != 0) 
         response.status(200).json(userList);
       else response.status(404).json('Not found this user!')
@@ -45,7 +46,8 @@ export default class UsersController {
     // user object contain the credential and basic profile info
     try {
       // Check credentials information and create user object
-      if (!request.body.username || !request.body.email || !request.body.password) {
+      if (!request.body.username || !request.body.email || !request.body.password ||
+         !request.body.firstName || !request.body.lastName || !request.body.dateOfBirth || !request.body.gender) {
         // return 400 Bad Request if missing values
         return response.status(400).json({ error: 'Missing required values' });
       }
@@ -78,19 +80,19 @@ export default class UsersController {
     // return 200 OK if success and return a token
     // return 401 Unauthorized if credential invalid
     try {
-      const { username, email, phone, password } = request.body;
-      const user = await User.findOne({ username });
+      const { username, password } = request.body;
+      const user = await User.findOne({username});
 
       if (!user) {
         return response.status(404).json('Wrong username!');
       }
 
-      const validPassword = await bcrypt.compare(request.body.password, user.password);
+      const validPassword = bcrypt.compare(request.body.password, user.password);
 
-      if (!validPassword || user.email !== email) {
+      if (!validPassword) {
         return response.status(401).json({ error: 'Credential invalid!' });
       }
-      if (user && validPassword && user.email === email) {
+      if (user && validPassword) {
         const accessToken = jwt.sign(
           {
             id: user.id,

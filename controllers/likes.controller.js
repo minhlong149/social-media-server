@@ -5,22 +5,26 @@ export default class LikesController {
   static async addLike(request, response) {
     // return 200 OK if success, 409 Conflict if user has already like the post
     const { postId } = request.params;
-    const { userId } = request.body;
+    const { userId }= request.body;
 
     try {
       const post = await Post.findById(postId);
-
+      
       if (!post) {
         return response.status(404).json({ error: "Post not found" });
       }
 
-      // Kiểm tra nếu người dùng đã like bài viết đó
-      if (post.likes.includes(userId)) {
-        return response.status(409).json({ error: "User already liked this post" });
+      if (!post.likes) {
+        await Post.updateOne({_id: postId}, { $addToSet: { likes: userId }});
+        
+      } else {
+        if (post.likes.includes(userId)) {
+          return response.status(409).json({ error: "User already liked this post" });
+        }
+        else {
+          await Post.updateOne({_id: postId}, { $push: { likes: userId }});
+        }
       }
-
-      post.likes.push(userId);
-      await post.save();
 
       await addNotification(
         new Notification({
@@ -54,11 +58,9 @@ export default class LikesController {
       if (!post.likes.includes(userId)) {
         return response.status(400).json({ error: "Bad Request" });
       }
-
-
-      //Xóa id người like trong bài viết sau khi xóa like
-        post.likes.pull(userId);
-        await post.save();
+      else {
+        await Post.updateOne({_id: postId}, { $pull: { likes: userId }})
+      }
 
       return response.status(204).json({message: "No Content"});
     } catch (error) {

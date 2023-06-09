@@ -4,10 +4,13 @@ import Post from '../models/post.model.js';
 import User from '../models/user.model.js';
 import { addNotification } from '../utils/notifications.js';
 
+import { uploadFile } from './image.controller.js';
+
 export default class PostsController {
   static async getPosts(request, response) {
     const { caption, hashtag, sortBy } = request.query;
-    const { userID, numOfPage = 0 } = request.body;
+    const { userID, numOfPage } = request.query;
+
     const postPerPage = 20;
     try {
       const currentUser = await User.findById(userID);
@@ -28,6 +31,10 @@ export default class PostsController {
             author: { $in: allIds },
             privacy: { $in: ['public', 'friend'] },
           })
+            .populate({
+              path: 'author',
+              select: 'username firstName lastName avatarURL id',
+            })
             .sort({ createdAt: -1 })
             .limit(postPerPage)
             .skip(postPerPage * numOfPage);
@@ -45,19 +52,23 @@ export default class PostsController {
           // sorted by a scoring system
           const popularPosts = (
             await Post.find({ author: { $in: allIds }, privacy: { $in: ['public', 'friend'] } })
+              .populate({
+                path: 'author',
+                select: 'username firstName lastName avatarURL id',
+              })
               .sort({ createdAt: -1 })
               .limit(postPerPage)
               .skip(postPerPage * numOfPage)
           ).map((post) => {
             return {
-              posts: post,
-              score: post.likes.length + post.comments.length * 2 + post.shares.length * 3,
+              post,
+              score: post.likes?.length + post.comments?.length * 2 + post.shares?.length * 3,
             };
           });
           popularPosts.sort((a, b) => b.score - a.score);
           //Kết quả trả về
           res = {
-            posts: popularPosts,
+            posts: popularPosts.map((post) => post.post),
             totalpost: popularPosts.length,
             page: numOfPage,
           };
@@ -68,6 +79,9 @@ export default class PostsController {
           let filterPosts = await Post.find({
             author: { $in: allIds },
             privacy: { $in: ['friend', 'public'] },
+          }).populate({
+            path: 'author',
+            select: 'username firstName lastName avatarURL id',
           });
 
           if (caption) {
@@ -119,13 +133,29 @@ export default class PostsController {
     // post object contain the author id, caption, mediaURL, privacy and hashtags
     // return 201 Created if success and return the created object
     // return 400 Bad Request if missing values
-    const post = request.body;
-    const newPost = await Post(post);
     try {
-      if (!post.author || !post.caption || !post.privacy) {
-        return response.status(400).json('Missing values');
+      const post = request.body;
+
+      if (!post.author) {
+        response.status(400).json('Missing author id');
       }
-      const savedPost = await newPost.save();
+
+      if (!post.caption) {
+        response.status(400).json('Missing caption');
+      }
+
+      if (!post.privacy) {
+        response.status(400).json('Missing privacy');
+      }
+
+      const newPost = new Post(post);
+
+      if (request.file !== undefined) {
+        const data = await uploadFile(request.file);
+        newPost.mediaURL = `/images/${data.Key}`;
+      }
+
+      await newPost.save();
 
       await addNotification(
         new Notification({
@@ -136,7 +166,7 @@ export default class PostsController {
         }),
       );
 
-      response.status(201).json(savedPost);
+      return response.status(201).json(newPost);
     } catch (error) {
       response.status(500).json(error);
     }

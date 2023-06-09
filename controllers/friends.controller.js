@@ -5,6 +5,9 @@ const ObjectId = mongoose.Types.ObjectId
 //here uses the status value in friendsList to indicate friend or friend request
 //status: '1' means friend, status: '0' means friend request
 export default class FriendsController {
+
+  
+
   static async getFriendsList(request, response) {
     const { userId } = request.params;
     const { pending } = request.query;
@@ -14,19 +17,40 @@ export default class FriendsController {
       let friends = []
       for (let i in user.friendsList)
       {
-        if(user.friendsList[parseInt(i)]["status"] == "accepted")
-        {
-          friends.push(user.friendsList[parseInt(i)]["userId"])
-          console.log(user.friendsList[parseInt(i)]["userId"])
-        }
+
+          friends.push(user.friendsList[parseInt(i)]["userId"] )
+
       }
       let friendList = [];
       for ( let i in friends)
       {
         let friend = await User.findById(friends[i])
+
+        if(friend != null){
         const {firstName, lastName, avatarURL } = friend
-        const friendId = friends[i].userId
-        friendList.push({friendId, firstName, lastName, avatarURL})
+        const friendId = friends[i]._id
+        const status = user.friendsList[i]["status"]
+      let sameFriend = 0
+      let myFriendList = []
+      for (let i in user.friendsList)
+        {
+          if(user.friendsList[parseInt(i)]["status"] == "accepted"){
+            myFriendList.push(user.friendsList[parseInt(i)]["userId"])
+        }
+      }
+
+      for (let j in friend.friendsList)
+        {
+          if(JSON.stringify(friend.friendsList[parseInt(j)]["status"]) == "accepted"){
+          if(JSON.stringify(myFriendList).indexOf(JSON.stringify(friend.friendsList[parseInt(j)]["userId"])))
+          {
+            sameFriend++
+          }
+        }
+      }
+        friendList.push({friendId, firstName, lastName, avatarURL, status, sameFriend})
+        }
+
       }
       response.status(200).json(friendList);
     } catch (error) { 
@@ -50,7 +74,9 @@ export default class FriendsController {
         if(user.friendsList[parseInt(i)]["userId"] == friendId)
         {
           isFriend = true;
-          if (user.friendsList[parseInt(i)]["status"] == "pending")
+
+          if (user.friendsList[parseInt(i)]["status"] == "pending" || user.friendsList[parseInt(i)]["status"] == "waiting" )
+
           {
             response.status(400).json("You have already sent a friend request to this person.")
           }
@@ -62,7 +88,9 @@ export default class FriendsController {
         }
       }
       if(isFriend == false){
-        await User.findOneAndUpdate({_id: userId}, { $push: { friendsList: {userId: friendId, status: "pending" } }});
+
+        await User.findOneAndUpdate({_id: userId}, { $push: { friendsList: {userId: friendId, status: "waiting" } }});
+
         await User.findOneAndUpdate({_id: friendId}, { $push: { friendsList: {userId: userId, status: "pending" } }});
 
         await addNotification(
@@ -163,41 +191,61 @@ export default class FriendsController {
     try {
       let user = await User.findById(userId);
       let myFriendList = []
-      let sameFriendsList = []
+
+      
+      let friendsOfFriends = []
       for (let i in user.friendsList)
       {
-        myFriendList.push(user.friendsList[parseInt(i)]["userId"])
+        if(user.friendsList[parseInt(i)]["status"] == "accepted"){
+          myFriendList.push(user.friendsList[parseInt(i)]["userId"])
+        }
+        
       }
+
+      
+
       for (let i in myFriendList)
       {
         let friend = await User.findById(myFriendList[parseInt(i)])
         for (let j in friend.friendsList)
         {
-          if(JSON.stringify(myFriendList).indexOf(JSON.stringify(friend.friendsList[parseInt(j)]["userId"])) != -1 && JSON.stringify(sameFriendsList).indexOf(JSON.stringify(friend.friendsList[parseInt(j)]["userId"])) == -1 )
+
+          if(JSON.stringify(myFriendList).indexOf(JSON.stringify(friend.friendsList[parseInt(1)]["userId"])) == -1 && JSON.stringify(friendsOfFriends).indexOf(JSON.stringify(friend.friendsList[parseInt(1)]["userId"])) == -1 )
           {
-            sameFriendsList.push(friend.friendsList[parseInt(j)]["userId"])
+            console.log(friend.friendsList[parseInt(1)]["userId"])
+            friendsOfFriends.push(friend.friendsList[parseInt(1)]["userId"])
           }
         }
       }
-      let friends = []
-      for (let i in user.friendsList)
+
+     
+
+      let friendsOfFriendsList = []
+      for ( let i in friendsOfFriends)
       {
-        if(user.friendsList[parseInt(i)]["status"] == "accepted")
+        let friend = await User.findById(friendsOfFriends[i])
+        const {firstName, lastName, avatarURL } = friend
+        const friendId = friendsOfFriends[i]._id
+        const sameFriend = 0
+        for (let j in friend.friendsList)
         {
-          friends.push(user.friendsList[parseInt(i)]["userId"])
+          if(JSON.stringify(friend.friendsList[parseInt(j)]["status"]) == "accepted"){
+          if(JSON.stringify(myFriendList).indexOf(JSON.stringify(friend.friendsList[parseInt(j)]["userId"])))
+          {
+            sameFriend++
+          }
         }
       }
-      let friendList = [];
-      for ( let i in friends)
-      {
-        let friend = await User.findById(friends[i])
-        const {firstName, lastName, avatarURL } = friend
-        const friendId = friends[i].userId
-        friendList.push({friendId, firstName, lastName, avatarURL})
+        
+        friendsOfFriendsList.push({friendId, firstName, lastName, avatarURL, sameFriend})
       }
-      response.status(200).json(friendList)
+      response.status(200).json(friendsOfFriendsList)
+
     } catch (error) {
       response.status(400).json({ message: error.message });
     }
   }
+
+
+  
 }

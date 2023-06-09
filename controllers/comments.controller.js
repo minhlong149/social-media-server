@@ -1,5 +1,5 @@
-import Comment from "../models/comment.model.js";
-import Post from "../models/post.model.js";
+import Comment from '../models/comment.model.js';
+import Post from '../models/post.model.js';
 import { addNotification } from '../utils/notifications.js';
 
 export default class CommentsController {
@@ -11,45 +11,31 @@ export default class CommentsController {
   //Ps: Trong posts.route, có phương thức getCommentsByPostId nên để phương thức này trống, nếu có thì server báo lỗi.
 
   static async addComments(request, response) {
-    // comment object contain the info needed (can destructuring if want to)
+    // post object contain the author id, caption, mediaURL, privacy and hashtags
     // return 201 Created if success and return the created object
     // return 400 Bad Request if missing values
+    const { postId } = request.params;
+    const comment = request.body;
+    const newComment = await Comment(comment);
     try {
-      const { postId } = request.params;
-      const comment = request.body;
+      if (!comment.text || !comment.author) {
+        return response.status(400).json('Missing values');
+      }
+      const savedComment = await newComment.save();
+      await Post.findOneAndUpdate({ _id: postId }, { $push: { comments: savedComment._id } });
 
-    // Kiểm tra comment có đủ thông tin hay không
-    if (!comment || !comment.text || !comment.userId) {
-      return response.status(400).json({ error: "Bad Request" });
-    }
+      await addNotification(
+        new Notification({
+          user: comment.userId,
+          type: 'comment',
+          target: post.id,
+          targetModel: 'Post',
+        }),
+      );
 
-    // Tạo mới comment
-    const newComment = await Comment.create(comment);
-
-    // Tìm post theo id 
-    const post = await Post.findById(postId);
-
-    if (!post) {
-      return response.status(404).json({ error: "Post not found" });
-    }
-
-    //Lưu comment mới tạo vào danh sách comment của bài post
-    post.comments.push(newComment.id);
-    await post.save();
-
-    await addNotification(
-      new Notification({
-        user: comment.userId,
-        type: 'comment',
-        target: post.id,
-        targetModel: 'Post',
-      }),
-    );
-  
-    return response.status(201).json(newComment);
+      response.status(201).json(savedComment);
     } catch (error) {
-    console.error(error);
-    return response.status(500).json({ error: "Something went wrong" });
+      response.status(500).json(error);
     }
   }
 
@@ -60,54 +46,44 @@ export default class CommentsController {
       const { postId, commentId } = request.params;
       const comment = request.body;
 
-      
       //Cập nhập một bình luận
       const updatedComment = await Comment.findByIdAndUpdate(
         commentId,
         { text: comment.text },
-        { new: true }
+        { new: true },
       );
 
       // Kiểm tra comment
       if (!updatedComment) {
-        return response.status(400).json({ error: "Bad Request" });
+        return response.status(400).json({ error: 'Bad Request' });
       }
-
 
       return response.status(200).json(updatedComment);
     } catch (error) {
-      return response.status(500).json({ error: "Something went wrong" });
+      return response.status(500).json({ error: 'Something went wrong' });
     }
   }
 
   static async deleteCommentsById(request, response) {
     // ALWAY return 204 No Content
     // return 400 Bad Request if values is invalid/not found
-
+    const { postId, commentId } = request.params;
     try {
-      const { postId, commentId } = request.params;
-
       //Xóa một bình luận
-      const comment = await Comment.findById(commentId);
-      await comment.deleteOne();
-      if (!comment) {
-        return response.status(400).send({ message: "Bad Request" });
-      }
+      await Comment.findByIdAndDelete(commentId);
 
-      //Tìm lại thông tin bài post chứa bình luận 
+      //Tìm lại thông tin bài post chứa bình luận
       const post = await Post.findById(postId);
       if (!post) {
-        return response.status(404).json({ error: "Post not found" });
+        return response.status(404).json({ error: 'Post not found' });
+      } else {
+        await Post.updateOne({ _id: postId }, { $pull: { comments: commentId } });
       }
 
-      //Xóa id của bình luận trong bài viết sau khi xóa bình luận
-      post.comments.pull(commentId);
-      await post.save();
-
-      return response.status(204).send({ message: "No Content" });
+      return response.status(204).send({ message: 'No Content' });
     } catch (error) {
       console.error(error);
-      return response.status(500).send({ message: "Something went wrong" });
+      return response.status(500).send({ message: 'Something went wrong' });
     }
-  } 
+  }
 }
