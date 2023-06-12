@@ -26,6 +26,19 @@ const userSchema = new mongoose.Schema(
       },
     ],
     // saved: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+    notifications: [
+      {
+        notification: { 
+          type: mongoose.Schema.Types.ObjectId, 
+          required: true,
+          ref: 'Notification'
+        },
+        read: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
   },
   {
     timestamps: true, // access to createdAt & updatedAt properties

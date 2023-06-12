@@ -1,6 +1,8 @@
-import Post from "../models/post.model.js";
-import User from "../models/user.model.js";
-import Comment from "../models/comment.model.js";
+import Comment from '../models/comment.model.js';
+import Notification from '../models/notification.model.js';
+import Post from '../models/post.model.js';
+import User from '../models/user.model.js';
+import { addNotification } from '../utils/notifications.js';
 
 import { uploadFile } from './image.controller.js';
 
@@ -154,6 +156,16 @@ export default class PostsController {
       }
 
       await newPost.save();
+
+      await addNotification(
+        new Notification({
+          user: post.author,
+          type: 'post',
+          target: newPost.id,
+          targetModel: 'Post',
+        }),
+      );
+
       return response.status(201).json(newPost);
     } catch (error) {
       response.status(500).json(error);

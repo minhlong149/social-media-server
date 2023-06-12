@@ -1,5 +1,6 @@
-import Comment from "../models/comment.model.js";
-import Post from "../models/post.model.js";
+import Comment from '../models/comment.model.js';
+import Post from '../models/post.model.js';
+import { addNotification } from '../utils/notifications.js';
 
 export default class CommentsController {
   static async getCommentsByPostId(request, response) {
@@ -13,19 +14,29 @@ export default class CommentsController {
     // post object contain the author id, caption, mediaURL, privacy and hashtags
     // return 201 Created if success and return the created object
     // return 400 Bad Request if missing values
-      const { postId } = request.params;
-      const comment = request.body;
-      const newComment = await Comment(comment);
-      try {
-        if(!comment.text || !comment.author) {
-          return response.status(400).json("Missing values");
-        } 
-        const savedComment = await newComment.save();
-        await Post.findOneAndUpdate({_id: postId}, { $push: { comments: savedComment._id }});
-        response.status(201).json(savedComment);
-      } catch (error) {
-        response.status(500).json(error);
+    const { postId } = request.params;
+    const comment = request.body;
+    const newComment = await Comment(comment);
+    try {
+      if (!comment.text || !comment.author) {
+        return response.status(400).json('Missing values');
       }
+      const savedComment = await newComment.save();
+      await Post.findOneAndUpdate({ _id: postId }, { $push: { comments: savedComment._id } });
+
+      await addNotification(
+        new Notification({
+          user: comment.userId,
+          type: 'comment',
+          target: post.id,
+          targetModel: 'Post',
+        }),
+      );
+
+      response.status(201).json(savedComment);
+    } catch (error) {
+      response.status(500).json(error);
+    }
   }
 
   static async updateCommentsById(request, response) {
@@ -35,23 +46,21 @@ export default class CommentsController {
       const { postId, commentId } = request.params;
       const comment = request.body;
 
-      
       //Cập nhập một bình luận
       const updatedComment = await Comment.findByIdAndUpdate(
         commentId,
         { text: comment.text },
-        { new: true }
+        { new: true },
       );
 
       // Kiểm tra comment
       if (!updatedComment) {
-        return response.status(400).json({ error: "Bad Request" });
+        return response.status(400).json({ error: 'Bad Request' });
       }
-
 
       return response.status(200).json(updatedComment);
     } catch (error) {
-      return response.status(500).json({ error: "Something went wrong" });
+      return response.status(500).json({ error: 'Something went wrong' });
     }
   }
 
@@ -60,22 +69,21 @@ export default class CommentsController {
     // return 400 Bad Request if values is invalid/not found
     const { postId, commentId } = request.params;
     try {
-      
       //Xóa một bình luận
       await Comment.findByIdAndDelete(commentId);
 
-      //Tìm lại thông tin bài post chứa bình luận 
+      //Tìm lại thông tin bài post chứa bình luận
       const post = await Post.findById(postId);
       if (!post) {
-        return response.status(404).json({ error: "Post not found" });
+        return response.status(404).json({ error: 'Post not found' });
       } else {
-        await Post.updateOne({_id: postId}, { $pull: { comments: commentId }});
+        await Post.updateOne({ _id: postId }, { $pull: { comments: commentId } });
       }
 
-      return response.status(204).send({ message: "No Content" });
+      return response.status(204).send({ message: 'No Content' });
     } catch (error) {
       console.error(error);
-      return response.status(500).send({ message: "Something went wrong" });
+      return response.status(500).send({ message: 'Something went wrong' });
     }
-  } 
+  }
 }
