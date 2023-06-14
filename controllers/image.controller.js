@@ -4,7 +4,7 @@ const s3 = new AWS.S3();
 export default class ImagesController {
   static async getImage(request, response) {
     const { imageId } = request.params;
-    const readStream = getFileStream(imageId);
+    const readStream = await getFileStream(imageId);
     readStream.pipe(response);
   }
 }
