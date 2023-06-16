@@ -1,5 +1,5 @@
 import Post from "../models/post.model.js";
-import User from "../models/user.model.js";
+import { addNotification } from '../utils/notifications.js';
 
 export default class LikesController {
   static async addLike(request, response) {
@@ -25,6 +25,16 @@ export default class LikesController {
           await Post.updateOne({_id: postId}, { $push: { likes: userId }});
         }
       }
+
+      await addNotification(
+        new Notification({
+          user: userId,
+          type: 'like',
+          target: post.id,
+          targetModel: 'Post',
+        }),
+      );
+
       return response.status(200).json({message: "Liked success"});
     } catch (error) {
       console.error(error);
