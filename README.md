@@ -1,15 +1,15 @@
 # Social Media Server
 
-Máy chủ truy vấn trả về dữ liệu thông qua các REST API. *Đây là
-[một phần](https://github.com/minhlong149/social-media-client) đồ án xây dựng trang mạng xã
-hội cho môn học Kỹ thuật phát triển hệ thống Web của nhóm sinh viên trường Đại học Công nghệ Thông
-tin - ĐHQG TP.HCM.*
+Máy chủ truy vấn trả về dữ liệu thông qua các REST API. _Đây là
+[một phần](https://github.com/minhlong149/social-media-client) đồ án xây dựng trang mạng xã hội cho
+môn học Kỹ thuật phát triển hệ thống Web của nhóm sinh viên trường Đại học Công nghệ Thông tin -
+ĐHQG TP.HCM._
 
 - [Social Media Server](#social-media-server)
   - [Yêu cầu chức năng](#yêu-cầu-chức-năng)
     - [Tạo tài khoản mới và đăng nhập](#tạo-tài-khoản-mới-và-đăng-nhập)
     - [Hiển thị thông tin trang cá nhân](#hiển-thị-thông-tin-trang-cá-nhân)
-    - [Xem bài viết trên trang chủ](#xem-bài-viết-trên-trang-chủ)
+    - [Xem và tương tác với các bài viết](#xem-và-tương-tác-với-các-bài-viết)
     - [Các yêu cầu khác](#các-yêu-cầu-khác)
   - [Kiến trúc hệ thống](#kiến-trúc-hệ-thống)
   - [Thiết kế API](#thiết-kế-api)
@@ -36,7 +36,7 @@ tin - ĐHQG TP.HCM.*
 - Người dùng có thể xem thông tin cá nhân, danh sách bạn bè và bài viết của họ (hoặc BẠN BÈ của họ)
   tại **trang cá nhân** của người đó.
 
-### Xem bài viết trên trang chủ
+### Xem và tương tác với các bài viết
 
 - Người dùng có thể xem bài viết của bạn bè (tại trang chủ hoặc trang cá nhân của họ) được **sắp xếp
   theo MỚI NHẤT hoặc PHỔ BIẾN NHẤT**. Thông tin hiển thị bao gồm tên người đăng, thời gian, nội dung
@@ -57,7 +57,8 @@ tin - ĐHQG TP.HCM.*
 
 Máy chủ được xây dựng bằng `Node.js` và `Express` sẽ cung cấp các API cho máy khách để thực hiện các
 chức năng như đăng ký, đăng nhập, đăng bài viết, thích, bình luận, kết bạn và tìm kiếm. Thông tin về
-người dùng và bài viết sẽ được lưu trữ trong cơ sở dữ liệu `MongoDB` và `AWS S3`.
+người dùng và bài viết sẽ được lưu trữ trong cơ sở dữ liệu `MongoDB` và `AWS S3`. `JWT` và `Bcrypt`
+cũng được sử dụng để bảo mật thông tin đăng nhập của người dùng.
 
 ![MERN-stack Architecture](https://webassets.mongodb.com/_com_assets/cms/MEAN_stack-0pdlo3qwbn.png)
 
@@ -87,12 +88,12 @@ người dùng và bài viết sẽ được lưu trữ trong cơ sở dữ li�
 | POST        | api/posts/`:postId`/comments              | Thêm bình luận mới.                                                |
 | PUT         | api/posts/`:postId`/comments/`:commentId` | Sửa nội dung bình luận                                             |
 | DELETE      | api/posts/`:postId`/comments/`:commentId` | Xóa bình luận + phần trả lời                                       |
-| GET         | images/`:imageId`                          | Hiển thị hình ảnh bài viết                                         |
+| GET         | images/`:imageId`                         | Hiển thị hình ảnh bài viết                                         |
 
 ## Hướng dẫn cài đặt
 
-- Clone repo này về máy và cài các gói package bằng lệnh `npm install`. *Yêu cầu sử dụng Node.js
-  phiên bản từ **18.12.0 trở lên**.*
+- Clone repo này về máy và cài các gói package bằng lệnh `npm install`. _Yêu cầu sử dụng Node.js
+  phiên bản từ **18.12.0 trở lên**._
 
 - Thêm các biến môi trường `PORT`, `MONGODB_URI`, `JWT_ACCESS_KEY` vào tập tin `.env`.
 
@@ -104,10 +105,11 @@ người dùng và bài viết sẽ được lưu trữ trong cơ sở dữ li�
 
 ## Tác giả
 
-- [Nguyễn Đào Minh Long](https://github.com/minhlong149)
-- [Trần Trọng Nguyên](https://github.com/Norman-Tran)
-- [Quách Kiều Oanh](https://github.com/Qanh195)
-- [Lưu Chí Thịnh](https://github.com/Thinh446274)
-- [Lương Phúc Vinh](https://github.com/vinhlp02)
-- [Mai Ngọc Bích](https://github.com/bichmn)
-- [Lê Nguyễn Bá Duy](https://github.com/ZuyLeLe)
+- [Nguyễn Đào Minh Long](https://github.com/minhlong149) - Đăng tải hình ảnh
+- [Trần Trọng Nguyên](https://github.com/Norman-Tran) - Tạo tài khoản mới và đăng nhập
+- [Quách Kiều Oanh](https://github.com/Qanh195) - Hiển thị và lọc danh sách các bài viết trên trang
+  chủ và người dùng khi tim kiếm
+- [Lưu Chí Thịnh](https://github.com/Thinh446274) - Xây dựng các chức năng tương tác trên bài viết
+- [Lương Phúc Vinh](https://github.com/vinhlp02) - Quản lý trang thông tin cá nhân
+- [Mai Ngọc Bích](https://github.com/bichmn) - Quản lý bài viết
+- [Lê Nguyễn Bá Duy](https://github.com/ZuyLeLe) - Quản lý danh sách bạn bè và lời mời kết bạn
